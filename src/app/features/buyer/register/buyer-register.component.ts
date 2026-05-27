@@ -36,7 +36,7 @@ import { BuyerService } from '../../../core/services/services';
 
           <div class="form-group">
             <label class="form-label">Nombre completo *</label>
-            <input class="form-control" formControlName="nombre" placeholder="Tu nombre completo" />
+            <input class="form-control" formControlName="nombres" placeholder="Tu nombre completo" />
             <span class="form-error"
               *ngIf="form.get('nombre')?.invalid && form.get('nombre')?.touched">
               El nombre es obligatorio
@@ -55,7 +55,7 @@ import { BuyerService } from '../../../core/services/services';
 
           <div class="form-group">
             <label class="form-label">Contraseña *</label>
-            <input class="form-control" type="password" formControlName="password"
+            <input class="form-control" type="identificacion" formControlName="identificacion"
               placeholder="Mínimo 8 caracteres, una mayúscula y un número" />
             <span class="form-error"
               *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
