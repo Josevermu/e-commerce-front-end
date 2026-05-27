@@ -24,6 +24,13 @@ import { Product, ProductSearchParams } from '../../../core/models';
       <!-- Hero buscador -->
       <div class="catalog-hero">
         <div class="container">
+          <div class="catalog-hero__nav">
+            <span class="catalog-hero__brand">🛒 KONRAD</span>
+            <div class="catalog-hero__actions">
+              <a routerLink="/buyers/register" class="btn-hero-outline">Registrarse</a>
+              <a routerLink="/auth/login" class="btn-hero-primary">Iniciar sesión</a>
+            </div>
+          </div>
           <h1 class="catalog-hero__title">Descubre los mejores productos</h1>
           <p class="catalog-hero__sub">Miles de productos de vendedores verificados en Colombia</p>
           <div class="catalog-hero__search">
@@ -86,17 +93,16 @@ import { Product, ProductSearchParams } from '../../../core/models';
               <div
                 *ngFor="let p of products"
                 class="product-card"
-                (click)="viewProduct(p.id!)"
+                (click)="viewProduct(p)"
               >
                 <div class="product-card__image">🛍️</div>
                 <div class="product-card__body">
                   <div class="product-card__category">{{ p.categoria }}</div>
                   <div class="product-card__name">{{ p.nombre }}</div>
-                  <div class="product-card__price">{{ p.precio | currency:'COP':'symbol-narrow':'1.0-0' }}</div>
+                  <div class="product-card__price">{{ p.valor | currency:'COP':'$':'1.0-0' }}</div>
                   <div class="product-card__seller">por {{ p.nombreVendedor ?? 'Vendedor Konrad' }}</div>
                   <div class="flex items-center gap-1 mt-1">
-                    <span class="badge badge-success" *ngIf="p.stock && p.stock > 0">Stock: {{ p.stock }}</span>
-                    <span class="badge badge-warning" *ngIf="p.aplicaIVA">IVA incl.</span>
+                    <span class="badge badge-success" *ngIf="p.cantidad && p.cantidad > 0">Stock: {{ p.cantidad }}</span>
                   </div>
                 </div>
               </div>
@@ -110,6 +116,33 @@ import { Product, ProductSearchParams } from '../../../core/models';
           </div>
         </div>
       </div>
+
+    <!-- Modal detalle producto -->
+    <div class="modal-overlay" *ngIf="selectedProduct" (click)="closeProduct()">
+      <div class="modal-product" (click)="$event.stopPropagation()">
+        <button class="modal-close" (click)="closeProduct()">✕</button>
+        <div class="modal-product__image">🛍️</div>
+        <div class="modal-product__body">
+          <span class="badge badge-secondary">{{ selectedProduct.categoria }}</span>
+          <h2 class="modal-product__name">{{ selectedProduct.nombre }}</h2>
+          <div class="modal-product__price">{{ selectedProduct.valor | currency:'COP':'$':'1.0-0' }}</div>
+          <div class="modal-product__meta">
+            <div><strong>Marca:</strong> {{ selectedProduct.marca }}</div>
+            <div><strong>Color:</strong> {{ selectedProduct.color }}</div>
+            <div *ngIf="selectedProduct.talla"><strong>Talla:</strong> {{ selectedProduct.talla }}</div>
+            <div><strong>Stock:</strong> {{ selectedProduct.cantidad }} unidades</div>
+            <div><strong>Peso:</strong> {{ selectedProduct.peso }} kg</div>
+          </div>
+          <div style="display:flex; gap:.5rem; margin-top:.75rem;">
+            <span class="badge badge-success" *ngIf="selectedProduct.nuevo">Nuevo</span>
+            <span class="badge badge-info" *ngIf="selectedProduct.original">Original</span>
+          </div>
+          <div class="modal-product__actions">
+            <a routerLink="/auth/login" class="btn btn-primary">🛒 Iniciar sesión para comprar</a>
+          </div>
+        </div>
+      </div>
+    </div>
     </div>
   `,
   styles: [`
@@ -118,6 +151,17 @@ import { Product, ProductSearchParams } from '../../../core/models';
       background: linear-gradient(160deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
       padding: 4rem 0 3rem; text-align: center;
     }
+    .catalog-hero__nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; }
+    .catalog-hero__brand { font-size:1.3rem; font-weight:800; color:#fff; }
+    .catalog-hero__actions { display:flex; gap:.75rem; }
+    .btn-hero-outline { border:2px solid rgba(255,255,255,.6); color:#fff; background:transparent;
+      border-radius:8px; padding:.45rem 1.1rem; font-size:.88rem; font-weight:600;
+      text-decoration:none; transition:.2s; }
+    .btn-hero-outline:hover { background:rgba(255,255,255,.1); }
+    .btn-hero-primary { background:#F4623A; color:#fff; border:none;
+      border-radius:8px; padding:.45rem 1.1rem; font-size:.88rem; font-weight:600;
+      text-decoration:none; transition:.2s; }
+    .btn-hero-primary:hover { background:#e05530; }
     .catalog-hero__title { font-family: var(--font-display); font-size: 2.25rem; font-weight: 800; color: white; margin-bottom: 0.75rem; }
     .catalog-hero__sub   { color: rgba(255,255,255,0.7); font-size: 1.0625rem; margin-bottom: 2rem; }
     .catalog-hero__search { display: flex; justify-content: center; }
@@ -129,6 +173,20 @@ import { Product, ProductSearchParams } from '../../../core/models';
     .catalog-empty { grid-column: 1/-1; text-align: center; padding: 3rem; }
     .catalog-empty__icon { font-size: 3rem; margin-bottom: 1rem; }
 
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1000;
+      display:flex; align-items:center; justify-content:center; padding:1rem; }
+    .modal-product { background:#fff; border-radius:16px; max-width:480px; width:100%;
+      padding:2rem; position:relative; max-height:90vh; overflow-y:auto; }
+    .modal-close { position:absolute; top:1rem; right:1rem; background:none; border:none;
+      font-size:1.2rem; cursor:pointer; color:#6b7280; }
+    .modal-product__image { font-size:4rem; text-align:center; margin-bottom:1rem; }
+    .modal-product__name { font-size:1.3rem; font-weight:800; color:#0D1B2A; margin:.5rem 0; }
+    .modal-product__price { font-size:1.5rem; font-weight:800; color:#F4623A; margin-bottom:1rem; }
+    .modal-product__meta { display:flex; flex-direction:column; gap:.4rem; font-size:.9rem;
+      color:#4b5563; margin-bottom:1rem; }
+    .modal-product__actions { margin-top:1.5rem; }
+    .modal-product__actions .btn { width:100%; text-align:center; }
+
     @media (max-width: 768px) { .catalog-layout { grid-template-columns: 1fr; } .catalog-filters { position: static; } }
   `]
 })
@@ -136,6 +194,7 @@ export class CatalogComponent implements OnInit {
   products: Product[] = [];
   loading = true;
   searchParams: ProductSearchParams = {};
+  selectedProduct: Product | null = null;
 
   categories = ['Ropa', 'Electrónica', 'Hogar', 'Deportes', 'Belleza', 'Libros', 'Alimentos', 'Juguetes'];
 
@@ -156,8 +215,12 @@ export class CatalogComponent implements OnInit {
     this.search();
   }
 
-  viewProduct(id: string): void {
-    this.router.navigate(['/products', id]);
+  viewProduct(product: Product): void {
+    this.selectedProduct = product;
+  }
+
+  closeProduct(): void {
+    this.selectedProduct = null;
   }
 }
 

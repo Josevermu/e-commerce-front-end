@@ -117,10 +117,10 @@ export interface Product {
   id?: string;
   nombre: string;
   descripcion: string;
-  precio: number;
+  precio?: number; valor?: number;
   categoria: string;
   subcategoria?: string;
-  stock: number;
+  stock?: number; cantidad?: number; marca?: string; color?: string; talla?: string; tamano?: string; nuevo?: boolean; original?: boolean;
   sellerId: string;
   nombreVendedor?: string;
   peso?: number;
