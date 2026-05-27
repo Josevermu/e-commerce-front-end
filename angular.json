@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "konrad-frontend": {
+    "e-commerce-frontend": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/konrad-frontend",
+            "outputPath": "dist/e-commerce-frontend",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -64,8 +64,8 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
-            "production":  { "buildTarget": "konrad-frontend:build:production" },
-            "development": { "buildTarget": "konrad-frontend:build:development" }
+            "production":  { "buildTarget": "e-commerce-frontend:build:production" },
+            "development": { "buildTarget": "e-commerce-frontend:build:development" }
           },
           "defaultConfiguration": "development",
           "options": {
