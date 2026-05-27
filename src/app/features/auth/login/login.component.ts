@@ -183,10 +183,10 @@ export class LoginComponent {
 
   /** Credenciales de prueba precargadas (entorno mock) */
   testUsers = [
-    { role: 'DIRECTOR', email: 'director@konrad.com', password: 'Director123', badgeClass: 'info' },
-    { role: 'SELLER',   email: 'vendedor@tienda.com', password: 'Seller123',   badgeClass: 'warning' },
-    { role: 'BUYER',    email: 'comprador@gmail.com', password: 'Buyer123',    badgeClass: 'success' },
-    { role: 'ADMIN',    email: 'admin@konrad.com',    password: 'Admin123',    badgeClass: 'purple' },
+    { role: 'DIRECTOR', email: 'director@konrad.com', password: 'Director1',  badgeClass: 'info' },
+    { role: 'SELLER',   email: 'vendedor@tienda.com', password: 'Seller123',  badgeClass: 'warning' },
+    { role: 'BUYER',    email: 'comprador@gmail.com', password: 'Buyer1234',  badgeClass: 'success' },
+    { role: 'ADMIN',    email: 'admin@konrad.com',    password: 'Admin123',   badgeClass: 'purple' },
   ];
 
   constructor(
