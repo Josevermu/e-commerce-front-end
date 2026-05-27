@@ -252,9 +252,9 @@ export class BuyerService {
  *
  * Endpoints:
  *   GET  /bam/dashboard             → tablero completo (KPIs + resumen)
- *   GET  /bam/kpi/top-product       → producto más vendido del mes
- *   GET  /bam/kpi/top-category      → categoría más consultada de la semana
- *   GET  /bam/kpi/subscriptions     → tendencia suscripciones por semestre
+ *   GET  /bam/kpis/top-product       → producto más vendido del mes
+ *   GET  /bam/kpis/top-category      → categoría más consultada de la semana
+ *   GET  /bam/kpis/subscriptions     → tendencia suscripciones por semestre
  *   GET  /bam/audit                 → log completo de auditoría
  *   GET  /bam/audit/by-user         → auditoría filtrada por usuario
  *   GET  /bam/audit/by-entity       → auditoría filtrada por entidad
