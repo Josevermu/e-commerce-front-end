@@ -24,6 +24,13 @@ import { Product, ProductSearchParams } from '../../../core/models';
       <!-- Hero buscador -->
       <div class="catalog-hero">
         <div class="container">
+          <div class="catalog-hero__nav">
+            <span class="catalog-hero__brand">🛒 KONRAD</span>
+            <div class="catalog-hero__actions">
+              <a routerLink="/buyers/register" class="btn-hero-outline">Registrarse</a>
+              <a routerLink="/auth/login" class="btn-hero-primary">Iniciar sesión</a>
+            </div>
+          </div>
           <h1 class="catalog-hero__title">Descubre los mejores productos</h1>
           <p class="catalog-hero__sub">Miles de productos de vendedores verificados en Colombia</p>
           <div class="catalog-hero__search">
@@ -118,6 +125,17 @@ import { Product, ProductSearchParams } from '../../../core/models';
       background: linear-gradient(160deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
       padding: 4rem 0 3rem; text-align: center;
     }
+    .catalog-hero__nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; }
+    .catalog-hero__brand { font-size:1.3rem; font-weight:800; color:#fff; }
+    .catalog-hero__actions { display:flex; gap:.75rem; }
+    .btn-hero-outline { border:2px solid rgba(255,255,255,.6); color:#fff; background:transparent;
+      border-radius:8px; padding:.45rem 1.1rem; font-size:.88rem; font-weight:600;
+      text-decoration:none; transition:.2s; }
+    .btn-hero-outline:hover { background:rgba(255,255,255,.1); }
+    .btn-hero-primary { background:#F4623A; color:#fff; border:none;
+      border-radius:8px; padding:.45rem 1.1rem; font-size:.88rem; font-weight:600;
+      text-decoration:none; transition:.2s; }
+    .btn-hero-primary:hover { background:#e05530; }
     .catalog-hero__title { font-family: var(--font-display); font-size: 2.25rem; font-weight: 800; color: white; margin-bottom: 0.75rem; }
     .catalog-hero__sub   { color: rgba(255,255,255,0.7); font-size: 1.0625rem; margin-bottom: 2rem; }
     .catalog-hero__search { display: flex; justify-content: center; }
