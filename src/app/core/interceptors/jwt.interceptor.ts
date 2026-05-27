@@ -54,7 +54,7 @@ export class JwtInterceptor implements HttpInterceptor {
 
 // ── auth.guard.ts ────────────────────────────────────────────
 
-import { Injectable as Injectable2 } from '@angular/core';
+
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree } from '@angular/router';
 
 /**
@@ -65,7 +65,7 @@ import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree } fro
  * Uso en rutas:
  *   { path: 'buyer', canActivate: [AuthGuard], component: ... }
  */
-@Injectable2({ providedIn: 'root' })
+@Injectable({ providedIn: 'root' })
 export class AuthGuard implements CanActivate {
   constructor(private auth: AuthService, private router: Router) {}
 
@@ -84,7 +84,7 @@ export class AuthGuard implements CanActivate {
 
 // ── role.guard.ts ────────────────────────────────────────────
 
-import { Injectable as Injectable3 } from '@angular/core';
+
 import { UserRole } from '../models';
 
 /**
@@ -99,7 +99,7 @@ import { UserRole } from '../models';
  *
  * Si el rol del usuario no está en la lista, redirige a /forbidden.
  */
-@Injectable3({ providedIn: 'root' })
+@Injectable({ providedIn: 'root' })
 export class RoleGuard implements CanActivate {
   constructor(private auth: AuthService, private router: Router) {}
 
