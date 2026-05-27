@@ -1,0 +1,10 @@
+{
+  "/auth": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true, "logLevel": "info" },
+  "/sellers": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/products": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/orders": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/cart": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/payments": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/buyers": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/bam": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true }
+}
