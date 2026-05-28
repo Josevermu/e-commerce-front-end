@@ -213,6 +213,13 @@ export interface PaymentRequest {
   nombreTitularTarjeta?: string;
   fechaVencimientoTarjeta?: string;
   cvv?: string;
+  moneda?: string;
+  tipoPersona?: string;
+  identificacion?: string;
+  descripcion?: string;
+  cardNumber?: string;
+  cardExpiry?: string;
+  cardCvv?: string;
 }
 
 export interface PaymentResponse {
@@ -334,3 +341,4 @@ export interface AuthState {
   relatedEntityId: string;
   email?: string;
 }
+
