@@ -113,7 +113,7 @@ export interface SubscriptionRequest {
 
 // ── Products ──────────────────────────────────────────────────
 
-export interface Product {
+export interface Product { valor?: number; marca?: string; color?: string; talla?: string; tamano?: string; nuevo?: boolean; original?: boolean;
   id?: string;
   nombre: string;
   descripcion: string;
@@ -144,7 +144,7 @@ export interface ProductSearchParams {
 export interface CartItem {
   productId: string;
   nombre: string;
-  cantidad: number;
+  cantidad?: number;
   precioUnitario: number;
   categoria?: string;
   peso?: number;

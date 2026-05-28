@@ -3,6 +3,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProductService } from '../../../core/services/services';
 import { SellerService } from '../../../core/services/seller.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { CartLocalService } from '../../../core/services/cart-local.service';
 import { Product, ProductSearchParams } from '../../../core/models';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -102,7 +104,7 @@ import { Product, ProductSearchParams } from '../../../core/models';
                   <div class="product-card__price">{{ p.valor | currency:'COP':'$':'1.0-0' }}</div>
                   <div class="product-card__seller">por {{ p.nombreVendedor ?? 'Vendedor Konrad' }}</div>
                   <div class="flex items-center gap-1 mt-1">
-                    <span class="badge badge-success" *ngIf="p.cantidad && p.cantidad > 0">Stock: {{ p.cantidad }}</span>
+                    <span class="badge badge-success" *ngIf="(p?.stock ?? 0) > 0">Stock: {{ p?.stock }}</span>
                   </div>
                 </div>
               </div>
@@ -130,7 +132,7 @@ import { Product, ProductSearchParams } from '../../../core/models';
             <div><strong>Marca:</strong> {{ selectedProduct.marca }}</div>
             <div><strong>Color:</strong> {{ selectedProduct.color }}</div>
             <div *ngIf="selectedProduct.talla"><strong>Talla:</strong> {{ selectedProduct.talla }}</div>
-            <div><strong>Stock:</strong> {{ selectedProduct.cantidad }} unidades</div>
+            <div><strong>Stock:</strong> {{ selectedProduct?.stock }} unidades</div>
             <div><strong>Peso:</strong> {{ selectedProduct.peso }} kg</div>
           </div>
           <div style="display:flex; gap:.5rem; margin-top:.75rem;">
@@ -138,7 +140,22 @@ import { Product, ProductSearchParams } from '../../../core/models';
             <span class="badge badge-info" *ngIf="selectedProduct.original">Original</span>
           </div>
           <div class="modal-product__actions">
-            <a routerLink="/auth/login" class="btn btn-primary">🛒 Iniciar sesión para comprar</a>
+            <div *ngIf="!isBuyer">
+              <a routerLink="/auth/login" class="btn btn-primary">🔑 Iniciar sesión para comprar</a>
+            </div>
+            <div *ngIf="isBuyer" style="display:flex; flex-direction:column; gap:.75rem;">
+              <div style="display:flex; align-items:center; gap:.75rem;">
+                <button class="btn btn-outline btn-sm" (click)="decreaseQty()">−</button>
+                <span style="font-weight:700; font-size:1.1rem;">{{ qty }}</span>
+                <button class="btn btn-outline btn-sm" (click)="increaseQty()">+</button>
+              </div>
+              <button class="btn btn-primary" (click)="addToCart()">
+                🛒 Agregar al carrito
+              </button>
+              <div *ngIf="addedMsg" class="alert alert-success" style="margin:0; padding:.5rem .75rem; font-size:.85rem;">
+                ✅ {{ addedMsg }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -195,10 +212,19 @@ export class CatalogComponent implements OnInit {
   loading = true;
   searchParams: ProductSearchParams = {};
   selectedProduct: Product | null = null;
+  qty = 1;
+  addedMsg = '';
+
+  get isBuyer(): boolean { return this.auth.currentState.role === 'BUYER'; }
 
   categories = ['Ropa', 'Electrónica', 'Hogar', 'Deportes', 'Belleza', 'Libros', 'Alimentos', 'Juguetes'];
 
-  constructor(private productSvc: ProductService, private router: Router) {}
+  constructor(
+    private productSvc: ProductService,
+    private router: Router,
+    private auth: AuthService,
+    private cartSvc: CartLocalService
+  ) {}
 
   ngOnInit(): void { this.search(); }
 
@@ -217,10 +243,28 @@ export class CatalogComponent implements OnInit {
 
   viewProduct(product: Product): void {
     this.selectedProduct = product;
+    this.qty = 1;
+    this.addedMsg = '';
   }
 
-  closeProduct(): void {
-    this.selectedProduct = null;
+  closeProduct(): void { this.selectedProduct = null; }
+
+  increaseQty(): void { this.qty++; }
+  decreaseQty(): void { if (this.qty > 1) this.qty--; }
+
+  addToCart(): void {
+    if (!this.selectedProduct) return;
+    const p = this.selectedProduct;
+    this.cartSvc.addItem({
+      productoId: p.id ?? '',
+      nombre: p.nombre,
+      precio: p.valor ?? p.precio ?? 0,
+      cantidad: this.qty,
+      sellerId: p.sellerId,
+      categoria: p.categoria,
+    });
+    this.addedMsg = `${this.qty} producto(s) agregado(s) al carrito`;
+    setTimeout(() => { this.addedMsg = ''; }, 2000);
   }
 }
 
