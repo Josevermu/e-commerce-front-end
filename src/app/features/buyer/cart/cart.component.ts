@@ -359,7 +359,7 @@ export class CheckoutComponent implements OnInit {
         entityType:  'ORDER',
         monto:       this.delivery?.total ?? 0,
         metodoPago:  this.selectedMethod,
-        moneda:      'COP',
+        
         tipoPersona: 'NATURAL',
         descripcion: 'Pago orden Konrad',
       };
@@ -370,7 +370,7 @@ export class CheckoutComponent implements OnInit {
         return { ...base, ...this.cardForm.value };
       }
       // CONSIGNATION
-      return { ...base, identificacion: this.pseForm.value?.identificacion ?? '00000000' };
+      return { ...base };
     };
 
     // Paso 1 — Crear la orden
