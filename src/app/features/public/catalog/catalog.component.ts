@@ -214,6 +214,7 @@ export class CatalogComponent implements OnInit {
   selectedProduct: Product | null = null;
   qty = 1;
   addedMsg = '';
+  itemAdded = false;
 
   get isBuyer(): boolean { return this.auth.currentState.role === 'BUYER'; }
 
@@ -245,12 +246,15 @@ export class CatalogComponent implements OnInit {
     this.selectedProduct = product;
     this.qty = 1;
     this.addedMsg = '';
+  itemAdded = false;
   }
 
-  closeProduct(): void { this.selectedProduct = null; }
+  closeProduct(): void { this.selectedProduct = null; this.itemAdded = false; }
 
   increaseQty(): void { this.qty++; }
   decreaseQty(): void { if (this.qty > 1) this.qty--; }
+
+  continueShopping(): void { this.itemAdded = false; this.qty = 1; }
 
   addToCart(): void {
     if (!this.selectedProduct) return;
@@ -264,7 +268,8 @@ export class CatalogComponent implements OnInit {
       categoria: p.categoria,
     });
     this.addedMsg = `${this.qty} producto(s) agregado(s) al carrito`;
-    setTimeout(() => { this.addedMsg = ''; }, 2000);
+    setTimeout(() => { this.addedMsg = '';
+  itemAdded = false; }, 2000);
   }
 }
 
@@ -448,3 +453,5 @@ export class SellerRegisterComponent {
     });
   }
 }
+
+
