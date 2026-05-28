@@ -32,7 +32,6 @@ export class AuthService {
 
   // Estado reactivo compartido en toda la app
   private authState$ = new BehaviorSubject<AuthState | null>(this.loadState());
-  private get state(): AuthState | null { return this.authState$.getValue(); }
 
   constructor(private http: HttpClient, private router: Router) {}
 
