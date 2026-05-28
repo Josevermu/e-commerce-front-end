@@ -113,7 +113,7 @@ export interface SubscriptionRequest {
 
 // ── Products ──────────────────────────────────────────────────
 
-export interface Product { valor?: number; marca?: string; color?: string; talla?: string; tamano?: string; nuevo?: boolean; original?: boolean;
+export interface Product {
   id?: string;
   nombre: string;
   descripcion: string;
