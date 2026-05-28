@@ -1,433 +1,394 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { OrderService } from '../../../core/services/services';
-import { PaymentService } from '../../../core/services/services';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { OrderService, PaymentService } from '../../../core/services/services';
 import { AuthService } from '../../../core/services/auth.service';
-import {
-  Cart, CartItem, MetodoPago, PaymentRequest, Order
-} from '../../../core/models';
+import { CartLocalService, CartLocalItem } from '../../../core/services/cart-local.service';
+import { MetodoPago, PaymentRequest } from '../../../core/models';
 
-/**
- * CartComponent — Carrito de compras del comprador.
- *
- * Flujo:
- *   1. Ver productos en el carrito (GET /cart/{buyerId})
- *   2. Elegir modalidad de entrega (PUT /cart/{buyerId}/delivery)
- *   3. Ir al checkout
- *
- * Ruta: /buyer/cart
- * Rol:  BUYER
- */
+// ── CartComponent ─────────────────────────────────────────────
+
 @Component({
   selector: 'app-cart',
   template: `
-    <div class="animate-fadeIn">
-      <div class="page-header">
-        <div>
-          <h1 class="page-header__title">Mi Carrito</h1>
-          <p class="page-header__sub" *ngIf="cart">{{ cart.items.length }} producto(s)</p>
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Mi Carrito</h1>
+        <p class="page-subtitle">{{ items.length }} producto(s)</p>
+      </div>
+      <a routerLink="/products" class="btn btn-outline">+ Agregar más</a>
+    </div>
+
+    <div class="cart-layout">
+      <div>
+        <div *ngIf="items.length === 0" class="card empty-state">
+          <div class="empty-icon">🛒</div>
+          <p>Tu carrito está vacío.</p>
+          <a routerLink="/products" class="btn btn-primary">Ver productos</a>
         </div>
-        <a routerLink="/products" class="btn btn-outline btn-sm">+ Agregar más</a>
+
+        <div class="cart-items" *ngIf="items.length > 0">
+          <div class="cart-item card" *ngFor="let item of items">
+            <div class="cart-item__icon">📦</div>
+            <div class="cart-item__info">
+              <div class="cart-item__name">{{ item.nombre }}</div>
+              <div class="cart-item__cat">{{ item.categoria }}</div>
+            </div>
+            <div class="cart-item__controls">
+              <button class="qty-btn" (click)="decrease(item)">−</button>
+              <span class="qty-val">{{ item.cantidad }}</span>
+              <button class="qty-btn" (click)="increase(item)">+</button>
+            </div>
+            <div class="cart-item__price">
+              {{ item.precio * item.cantidad | currency:'COP':'$':'1.0-0' }}
+            </div>
+            <button class="btn-remove" (click)="remove(item)">✕</button>
+          </div>
+        </div>
+
+        <!-- Entrega -->
+        <div class="card delivery-card" *ngIf="items.length > 0">
+          <h3 class="card-title">Modalidad de entrega</h3>
+          <div class="delivery-options">
+            <div class="delivery-opt" [class.selected]="!domicilio" (click)="domicilio = false">
+              <span>🏪</span>
+              <div><strong>Retiro en tienda</strong><div class="text-sm">Sin costo adicional</div></div>
+            </div>
+            <div class="delivery-opt" [class.selected]="domicilio" (click)="domicilio = true">
+              <span>🚚</span>
+              <div><strong>Envío a domicilio</strong><div class="text-sm">+ $15.000</div></div>
+            </div>
+          </div>
+          <div class="form-group" *ngIf="domicilio" style="margin-top:1rem;">
+            <label class="form-label">Ciudad de entrega</label>
+            <input class="form-control" [(ngModel)]="ciudad" placeholder="Bogotá, Medellín…" />
+          </div>
+          <div class="form-group" *ngIf="domicilio" style="margin-top:.75rem;">
+            <label class="form-label">Dirección de entrega</label>
+            <input class="form-control" [(ngModel)]="direccion" placeholder="Cra 15 #80-32, Apto 401" />
+          </div>
+        </div>
       </div>
 
-      <div *ngIf="loading" class="skeleton skeleton-rect" style="height:300px; border-radius:20px;"></div>
-
-      <div class="cart-layout" *ngIf="!loading && cart">
-        <!-- Items del carrito -->
-        <div>
-          <div *ngIf="cart.items.length === 0" class="card text-center" style="padding:3rem;">
-            <div style="font-size:3rem; margin-bottom:1rem;">🛒</div>
-            <p class="text-muted">Tu carrito está vacío.</p>
-            <a routerLink="/products" class="btn btn-primary mt-2">Ver productos</a>
-          </div>
-
-          <div class="cart-items" *ngIf="cart.items.length > 0">
-            <div *ngFor="let item of cart.items" class="cart-item card">
-              <div class="cart-item__image">{{ getCategoryEmoji(item.categoria) }}</div>
-              <div class="cart-item__info">
-                <div class="cart-item__name">{{ item.nombre }}</div>
-                <div class="cart-item__category text-muted text-sm">{{ item.categoria }}</div>
-                <div *ngIf="item.aplicaIVA" class="badge badge-warning mt-1">IVA incluido</div>
-              </div>
-              <div class="cart-item__price-col">
-                <div class="cart-item__unit">{{ item.precioUnitario | currency:'COP':'symbol-narrow':'1.0-0' }} c/u</div>
-                <div class="cart-item__qty">x{{ item.cantidad }}</div>
-                <div class="cart-item__total">{{ item.precioUnitario * item.cantidad | currency:'COP':'symbol-narrow':'1.0-0' }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Entrega -->
-          <div class="card mt-2" *ngIf="cart.items.length > 0">
-            <div class="card-header"><span class="card-title">Modalidad de entrega</span></div>
-            <div class="delivery-options">
-              <div
-                class="delivery-option"
-                [class.delivery-option--selected]="!cart.entregaDomicilio"
-                (click)="setDelivery(false)"
-              >
-                <span class="delivery-option__icon">🏪</span>
-                <div>
-                  <div class="font-bold">Retiro en tienda</div>
-                  <div class="text-sm text-muted">Sin costo adicional</div>
-                </div>
-              </div>
-              <div
-                class="delivery-option"
-                [class.delivery-option--selected]="cart.entregaDomicilio"
-                (click)="setDelivery(true)"
-              >
-                <span class="delivery-option__icon">🚚</span>
-                <div>
-                  <div class="font-bold">Envío a domicilio</div>
-                  <div class="text-sm text-muted">Costo calculado en checkout</div>
-                </div>
-              </div>
-            </div>
-            <div class="form-group mt-1" *ngIf="cart.entregaDomicilio">
-              <label>Ciudad de entrega</label>
-              <input class="form-control" [(ngModel)]="deliveryCity" placeholder="Ej: Bogotá" />
-            </div>
-          </div>
+      <!-- Resumen -->
+      <div class="cart-summary card" *ngIf="items.length > 0">
+        <h3 class="card-title">Resumen de orden</h3>
+        <div class="summary-line" *ngFor="let item of items">
+          <span>{{ item.nombre }} x{{ item.cantidad }}</span>
+          <span>{{ item.precio * item.cantidad | currency:'COP':'$':'1.0-0' }}</span>
         </div>
-
-        <!-- Resumen y checkout -->
-        <div class="cart-summary card">
-          <div class="card-header"><span class="card-title">Resumen de orden</span></div>
-
-          <div class="summary-line" *ngFor="let item of cart.items">
-            <span class="truncate">{{ item.nombre }} x{{ item.cantidad }}</span>
-            <span>{{ item.precioUnitario * item.cantidad | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
-          </div>
-
-          <div class="divider"></div>
-          <div class="summary-line">
-            <span>Subtotal</span>
-            <span>{{ subtotal | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
-          </div>
-          <div class="summary-line" *ngIf="cart.entregaDomicilio">
-            <span>Envío estimado</span>
-            <span>{{ 15000 | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
-          </div>
-          <div class="divider"></div>
-          <div class="summary-total">
-            <span>Total estimado</span>
-            <span>{{ (subtotal + (cart.entregaDomicilio ? 15000 : 0)) | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
-          </div>
-
-          <button
-            class="btn btn-primary btn-block btn-lg mt-2"
-            [disabled]="cart.items.length === 0"
-            (click)="goToCheckout()"
-          >
-            Proceder al pago →
-          </button>
-          <p class="text-xs text-muted text-center mt-1">
-            🔒 Pago seguro con PSE, tarjeta o consignación
-          </p>
+        <hr style="margin:.75rem 0; border-color:#f3f4f6;">
+        <div class="summary-line">
+          <span>Subtotal</span>
+          <span>{{ subtotal | currency:'COP':'$':'1.0-0' }}</span>
         </div>
+        <div class="summary-line" *ngIf="domicilio">
+          <span>Envío</span>
+          <span>{{ 15000 | currency:'COP':'$':'1.0-0' }}</span>
+        </div>
+        <hr style="margin:.75rem 0; border-color:#f3f4f6;">
+        <div class="summary-total">
+          <span>Total</span>
+          <span>{{ total | currency:'COP':'$':'1.0-0' }}</span>
+        </div>
+        <button class="btn btn-primary btn-block" style="margin-top:1rem;"
+          [disabled]="items.length === 0 || (domicilio && (!ciudad || !direccion))"
+          (click)="goCheckout()">
+          Proceder al pago →
+        </button>
       </div>
     </div>
   `,
   styles: [`
-    .cart-layout { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: flex-start; }
-    .cart-items { display: flex; flex-direction: column; gap: 1rem; }
-    .cart-item { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; }
-    .cart-item__image { font-size: 2.5rem; flex-shrink: 0; }
-    .cart-item__info { flex: 1; }
-    .cart-item__name { font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem; }
-    .cart-item__price-col { text-align: right; flex-shrink: 0; }
-    .cart-item__unit { font-size: 0.8125rem; color: var(--text-muted); }
-    .cart-item__qty  { font-size: 0.875rem; color: var(--text-secondary); }
-    .cart-item__total { font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; color: var(--color-orange); }
-
-    .delivery-options { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .delivery-option {
-      border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem;
-      cursor: pointer; display: flex; align-items: center; gap: 0.75rem;
-      transition: all var(--transition-fast);
-      &:hover { border-color: var(--color-orange); }
-      &--selected { border-color: var(--color-orange); background: #FFF0EB; }
-    }
-    .delivery-option__icon { font-size: 1.5rem; }
-
-    .summary-line { display: flex; justify-content: space-between; align-items: center; padding: 0.375rem 0; font-size: 0.9375rem; }
-    .summary-total { display: flex; justify-content: space-between; align-items: center; padding: 0.375rem 0; font-family: var(--font-display); font-weight: 700; font-size: 1.125rem; }
-
-    @media (max-width: 768px) { .cart-layout { grid-template-columns: 1fr; } }
+    .cart-layout { display:grid; grid-template-columns:1fr 320px; gap:1.5rem; align-items:start; }
+    @media(max-width:768px){ .cart-layout{ grid-template-columns:1fr; } }
+    .cart-items  { display:flex; flex-direction:column; gap:1rem; }
+    .cart-item   { display:flex; align-items:center; gap:1rem; padding:1rem 1.25rem; }
+    .cart-item__icon { font-size:2rem; }
+    .cart-item__info { flex:1; }
+    .cart-item__name { font-weight:600; }
+    .cart-item__cat  { font-size:.8rem; color:#9ca3af; }
+    .cart-item__controls { display:flex; align-items:center; gap:.5rem; }
+    .cart-item__price { font-weight:700; color:#F4623A; min-width:100px; text-align:right; }
+    .qty-btn { width:28px; height:28px; border-radius:6px; border:1.5px solid #e5e7eb;
+               background:#fff; cursor:pointer; font-size:1rem; }
+    .qty-val { font-weight:700; min-width:24px; text-align:center; }
+    .btn-remove { background:none; border:none; color:#9ca3af; cursor:pointer; font-size:1rem; }
+    .btn-remove:hover { color:#EF4444; }
+    .delivery-card { padding:1.25rem; margin-top:1rem; }
+    .delivery-options { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .delivery-opt { border:2px solid #e5e7eb; border-radius:10px; padding:1rem;
+                    cursor:pointer; display:flex; align-items:center; gap:.75rem; transition:.2s; }
+    .delivery-opt:hover { border-color:#F4623A; }
+    .delivery-opt.selected { border-color:#F4623A; background:#FFF0EB; }
+    .delivery-opt span { font-size:1.5rem; }
+    .summary-line  { display:flex; justify-content:space-between; padding:.3rem 0; font-size:.9rem; }
+    .summary-total { display:flex; justify-content:space-between; font-weight:800; font-size:1.1rem; }
+    .btn-block { width:100%; }
+    .text-sm { font-size:.8rem; color:#9ca3af; }
   `]
 })
 export class CartComponent implements OnInit {
-  cart: Cart | null = null;
-  loading = true;
-  deliveryCity = '';
+  items: CartLocalItem[] = [];
+  domicilio = false;
+  ciudad = '';
+  direccion = '';
 
-  constructor(
-    private orderSvc: OrderService,
-    private auth: AuthService,
-    private router: Router
-  ) {}
+  get subtotal() { return this.items.reduce((s, i) => s + i.precio * i.cantidad, 0); }
+  get total()    { return this.subtotal + (this.domicilio ? 15000 : 0); }
 
-  ngOnInit(): void {
-    this.orderSvc.getCart(this.auth.getRelatedEntityId()).subscribe({
-      next: c => { this.cart = c; this.loading = false; },
-      error: () => { this.loading = false; }
-    });
+  constructor(private cartSvc: CartLocalService, private router: Router) {}
+
+  ngOnInit(): void { this.items = this.cartSvc.getItems(); }
+
+  increase(item: CartLocalItem): void {
+    this.cartSvc.updateQuantity(item.productoId, item.cantidad + 1);
+    this.items = this.cartSvc.getItems();
   }
 
-  get subtotal(): number {
-    return this.cart?.items.reduce((s, i) => s + i.precioUnitario * i.cantidad, 0) ?? 0;
+  decrease(item: CartLocalItem): void {
+    if (item.cantidad > 1) {
+      this.cartSvc.updateQuantity(item.productoId, item.cantidad - 1);
+    } else {
+      this.cartSvc.removeItem(item.productoId);
+    }
+    this.items = this.cartSvc.getItems();
   }
 
-  setDelivery(domicilio: boolean): void {
-    if (!this.cart) return;
-    const buyerId = this.auth.getRelatedEntityId();
-    this.orderSvc.setDelivery(buyerId, domicilio, domicilio ? this.deliveryCity : undefined)
-      .subscribe(c => this.cart = c);
+  remove(item: CartLocalItem): void {
+    this.cartSvc.removeItem(item.productoId);
+    this.items = this.cartSvc.getItems();
   }
 
-  getCategoryEmoji(cat?: string): string {
-    const map: Record<string, string> = { 'Electrónica': '💻', Ropa: '👕', Hogar: '🏠', Deportes: '⚽', Belleza: '💄' };
-    return map[cat ?? ''] ?? '📦';
+  goCheckout(): void {
+    // Guardar info de entrega en sessionStorage para el checkout
+    sessionStorage.setItem('konrad_delivery', JSON.stringify({
+      domicilio: this.domicilio,
+      ciudad: this.ciudad,
+      direccion: this.direccion,
+      total: this.total,
+    }));
+    this.router.navigate(['/buyer/checkout']);
   }
-
-  goToCheckout(): void { this.router.navigate(['/buyer/checkout']); }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Checkout & Payment Component
-// ─────────────────────────────────────────────────────────────────────────────
+// ── CheckoutComponent ─────────────────────────────────────────
 
-/**
- * CheckoutComponent — Proceso de pago del comprador.
- *
- * Flujo:
- *   1. Seleccionar método de pago: PSE | CREDIT_CARD | CONSIGNATION
- *   2. Completar datos específicos del método
- *   3. POST /payments/process → obtener paymentId
- *   4. POST /orders/checkout/{buyerId}?paymentId=... → confirmar orden
- *
- * Ruta: /buyer/checkout
- * Rol:  BUYER
- */
 @Component({
   selector: 'app-checkout',
   template: `
-    <div class="animate-fadeIn">
-      <div class="page-header">
-        <div>
-          <button class="btn btn-ghost btn-sm mb-2" routerLink="/buyer/cart">← Volver al carrito</button>
-          <h1 class="page-header__title">Checkout</h1>
+    <div class="page-header">
+      <div>
+        <button class="btn btn-outline btn-sm" routerLink="/buyer/cart">← Volver</button>
+        <h1 class="page-title" style="margin-top:.5rem;">Checkout</h1>
+      </div>
+    </div>
+
+    <div class="checkout-layout">
+      <div>
+        <!-- Método de pago -->
+        <div class="card" style="margin-bottom:1rem;">
+          <h3 class="card-title">Método de pago</h3>
+          <div class="payment-methods">
+            <div *ngFor="let m of methods" class="payment-opt"
+              [class.selected]="selectedMethod === m.value"
+              (click)="selectedMethod = m.value">
+              <span>{{ m.icon }}</span>
+              <div><strong>{{ m.label }}</strong><div class="text-sm">{{ m.desc }}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PSE -->
+        <div class="card" *ngIf="selectedMethod === 'PSE'" [formGroup]="pseForm">
+          <h3 class="card-title">Datos PSE</h3>
+          <div class="form-group">
+            <label class="form-label">Entidad bancaria *</label>
+            <select class="form-control" formControlName="entidadBancaria">
+              <option value="">Selecciona tu banco</option>
+              <option *ngFor="let b of banks" [value]="b">{{ b }}</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Identificación *</label>
+              <input class="form-control" formControlName="identificacion" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tipo persona</label>
+              <select class="form-control" formControlName="tipoPersona">
+                <option value="NATURAL">Natural</option>
+                <option value="JURIDICA">Jurídica</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjeta -->
+        <div class="card" *ngIf="selectedMethod === 'CREDIT_CARD'" [formGroup]="cardForm">
+          <h3 class="card-title">Datos de tarjeta</h3>
+          <div class="form-group">
+            <label class="form-label">Número de tarjeta *</label>
+            <input class="form-control" formControlName="cardNumber" placeholder="4111 1111 1111 1111" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Vencimiento *</label>
+              <input class="form-control" formControlName="cardExpiry" placeholder="MM/YY" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">CVV *</label>
+              <input class="form-control" formControlName="cardCvv" placeholder="123" type="password" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Consignación -->
+        <div class="card" *ngIf="selectedMethod === 'CONSIGNATION'">
+          <h3 class="card-title">Consignación bancaria</h3>
+          <div class="alert-info" style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+            💳 Consigna a la cuenta Bancolombia <strong>001-234567-89</strong> a nombre de <strong>Konrad E-Commerce SAS</strong>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Número de comprobante</label>
+            <input class="form-control" [(ngModel)]="consignRef" placeholder="Ej: 20240001234" />
+          </div>
         </div>
       </div>
 
-      <div class="checkout-layout">
-        <!-- Método de pago -->
-        <div>
-          <!-- Selector de método -->
-          <div class="card mb-3">
-            <div class="card-header"><span class="card-title">Método de pago</span></div>
-            <div class="payment-methods">
-              <div
-                *ngFor="let m of paymentMethods"
-                class="payment-method"
-                [class.payment-method--selected]="selectedMethod === m.value"
-                (click)="selectMethod(m.value)"
-              >
-                <span class="payment-method__icon">{{ m.icon }}</span>
-                <div>
-                  <div class="font-bold">{{ m.label }}</div>
-                  <div class="text-xs text-muted">{{ m.desc }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <!-- Resumen -->
+      <div class="cart-summary card">
+        <h3 class="card-title">Resumen de pago</h3>
+        <div class="summary-line"><span>Subtotal</span><span>{{ delivery?.total - (delivery?.domicilio ? 15000 : 0) | currency:'COP':'$':'1.0-0' }}</span></div>
+        <div class="summary-line" *ngIf="delivery?.domicilio"><span>Envío</span><span>{{ 15000 | currency:'COP':'$':'1.0-0' }}</span></div>
+        <hr style="margin:.75rem 0; border-color:#f3f4f6;">
+        <div class="summary-total"><span>Total</span><span>{{ delivery?.total | currency:'COP':'$':'1.0-0' }}</span></div>
 
-          <!-- Formulario PSE -->
-          <div class="card" *ngIf="selectedMethod === 'PSE'" [formGroup]="pseForm">
-            <div class="card-header"><span class="card-title">Datos PSE</span></div>
-            <div class="form-group">
-              <label>Entidad bancaria</label>
-              <select class="form-control" formControlName="entidadBancaria">
-                <option value="">Selecciona tu banco</option>
-                <option *ngFor="let b of banks" [value]="b">{{ b }}</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Identificación del pagador</label>
-                <input class="form-control" formControlName="pagadorIdentificacion" />
-              </div>
-              <div class="form-group">
-                <label>Tipo de persona</label>
-                <select class="form-control" formControlName="pagadorTipo">
-                  <option value="NATURAL">Natural</option>
-                  <option value="JURIDICA">Jurídica</option>
-                </select>
-              </div>
-            </div>
-          </div>
+        <div *ngIf="successMsg" class="alert-success" style="background:#ECFDF5; border:1px solid #6EE7B7; border-radius:8px; padding:.75rem; margin-top:1rem; font-size:.88rem;">✅ {{ successMsg }}</div>
+        <div *ngIf="errorMsg"   class="alert-danger"  style="background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:.75rem; margin-top:1rem; font-size:.88rem;">❌ {{ errorMsg }}</div>
 
-          <!-- Formulario Tarjeta -->
-          <div class="card" *ngIf="selectedMethod === 'CREDIT_CARD'" [formGroup]="cardForm">
-            <div class="card-header"><span class="card-title">Datos de tarjeta</span></div>
-            <div class="form-group">
-              <label>Número de tarjeta</label>
-              <input class="form-control" formControlName="numeroTarjeta" placeholder="•••• •••• •••• ••••" maxlength="19" />
-            </div>
-            <div class="form-group">
-              <label>Nombre del titular</label>
-              <input class="form-control" formControlName="nombreTitularTarjeta" placeholder="Como aparece en la tarjeta" />
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Fecha de vencimiento</label>
-                <input class="form-control" formControlName="fechaVencimientoTarjeta" placeholder="MM/AA" />
-              </div>
-              <div class="form-group">
-                <label>CVV</label>
-                <input class="form-control" formControlName="cvv" placeholder="•••" maxlength="4" type="password" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Consignación -->
-          <div class="card" *ngIf="selectedMethod === 'CONSIGNATION'">
-            <div class="card-header"><span class="card-title">Consignación bancaria</span></div>
-            <div class="alert alert-info">
-              💳 Realiza una consignación a la cuenta Bancolombia N° <strong>001-234567-89</strong>
-              a nombre de <strong>Konrad E-Commerce SAS</strong> y adjunta el comprobante.
-            </div>
-            <div class="form-group">
-              <label>Número de comprobante</label>
-              <input class="form-control" [(ngModel)]="consignationRef" placeholder="Ej: 20240001234" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Resumen del pago -->
-        <div class="card cart-summary">
-          <div class="card-header"><span class="card-title">Resumen de pago</span></div>
-          <div class="summary-line"><span>Subtotal</span><span>{{ monto | currency:'COP':'symbol-narrow':'1.0-0' }}</span></div>
-          <div class="summary-line"><span>Envío</span><span>{{ 15000 | currency:'COP':'symbol-narrow':'1.0-0' }}</span></div>
-          <div class="summary-line"><span>IVA</span><span>{{ iva | currency:'COP':'symbol-narrow':'1.0-0' }}</span></div>
-          <div class="divider"></div>
-          <div class="summary-total"><span>TOTAL</span><span>{{ totalFinal | currency:'COP':'symbol-narrow':'1.0-0' }}</span></div>
-
-          <div *ngIf="paymentResult" class="alert alert-success mt-2">
-            ✅ Pago aprobado: {{ paymentResult.numeroAprobacion }}
-          </div>
-          <div *ngIf="errorMsg" class="alert alert-danger mt-2">⚠️ {{ errorMsg }}</div>
-
-          <button
-            class="btn btn-primary btn-block btn-lg mt-2"
-            [disabled]="processing"
-            (click)="processPayment()"
-          >
-            <span *ngIf="!processing">🔒 Pagar {{ totalFinal | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
-            <span *ngIf="processing"><span class="spinner"></span> Procesando pago...</span>
-          </button>
-          <p class="text-xs text-muted text-center mt-1">Pago seguro garantizado por KONRAD</p>
-        </div>
+        <button class="btn btn-primary btn-block" style="margin-top:1rem;"
+          [disabled]="processing" (click)="pay()">
+          {{ processing ? 'Procesando…' : '🔒 Pagar ' + (delivery?.total | currency:'COP':'$':'1.0-0') }}
+        </button>
+        <p style="font-size:.78rem; color:#9ca3af; text-align:center; margin-top:.5rem;">Pago seguro garantizado</p>
       </div>
     </div>
   `,
   styles: [`
-    .checkout-layout { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: flex-start; }
-    .payment-methods { display: flex; flex-direction: column; gap: 0.75rem; }
-    .payment-method {
-      display: flex; align-items: center; gap: 1rem;
-      padding: 1rem 1.25rem; border: 2px solid var(--color-border);
-      border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast);
-      &:hover { border-color: var(--color-orange); }
-      &--selected { border-color: var(--color-orange); background: #FFF0EB; }
-    }
-    .payment-method__icon { font-size: 1.75rem; flex-shrink: 0; }
-    .summary-line { display: flex; justify-content: space-between; padding: 0.375rem 0; font-size: 0.9375rem; }
-    .summary-total { display: flex; justify-content: space-between; font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; padding: 0.375rem 0; }
-    @media (max-width: 768px) { .checkout-layout { grid-template-columns: 1fr; } }
+    .checkout-layout { display:grid; grid-template-columns:1fr 320px; gap:1.5rem; align-items:start; }
+    @media(max-width:768px){ .checkout-layout{ grid-template-columns:1fr; } }
+    .payment-methods { display:flex; flex-direction:column; gap:.75rem; }
+    .payment-opt { display:flex; align-items:center; gap:1rem; padding:1rem; border:2px solid #e5e7eb;
+                   border-radius:10px; cursor:pointer; transition:.2s; }
+    .payment-opt:hover { border-color:#F4623A; }
+    .payment-opt.selected { border-color:#F4623A; background:#FFF0EB; }
+    .payment-opt span { font-size:1.5rem; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .summary-line { display:flex; justify-content:space-between; padding:.3rem 0; font-size:.9rem; }
+    .summary-total { display:flex; justify-content:space-between; font-weight:800; font-size:1.1rem; }
+    .btn-block { width:100%; }
+    .text-sm { font-size:.8rem; color:#9ca3af; }
   `]
 })
-export class CheckoutComponent {
+export class CheckoutComponent implements OnInit {
   selectedMethod: MetodoPago = 'PSE';
   processing = false;
-  paymentResult: any = null;
+  successMsg = '';
   errorMsg = '';
-  consignationRef = '';
+  consignRef = '';
+  delivery: any = null;
+  pseForm!: FormGroup;
+  cardForm!: FormGroup;
 
-  monto = 703000;
-  iva = 47500;
-  totalFinal = this.monto + 15000 + this.iva;
-
-  paymentMethods = [
-    { value: 'PSE' as MetodoPago, label: 'PSE', icon: '🏦', desc: 'Débito bancario directo' },
-    { value: 'CREDIT_CARD' as MetodoPago, label: 'Tarjeta de crédito/débito', icon: '💳', desc: 'Visa, Mastercard, Amex' },
-    { value: 'CONSIGNATION' as MetodoPago, label: 'Consignación', icon: '🧾', desc: 'Transferencia o consignación' },
+  methods = [
+    { value: 'PSE' as MetodoPago,         label: 'PSE',              icon: '🏦', desc: 'Débito bancario directo' },
+    { value: 'CREDIT_CARD' as MetodoPago, label: 'Tarjeta crédito',  icon: '💳', desc: 'Visa, Mastercard, Amex' },
+    { value: 'CONSIGNATION' as MetodoPago,label: 'Consignación',     icon: '🧾', desc: 'Transferencia bancaria' },
   ];
 
-  banks = ['Bancolombia', 'Banco de Bogotá', 'Davivienda', 'BBVA', 'Scotiabank Colpatria', 'Banco Popular'];
-
-  pseForm: FormGroup;
-  cardForm: FormGroup;
+  banks = ['Bancolombia', 'Banco de Bogotá', 'Davivienda', 'BBVA', 'Nequi'];
 
   constructor(
     private fb: FormBuilder,
     private paymentSvc: PaymentService,
     private orderSvc: OrderService,
     private auth: AuthService,
+    private cartSvc: CartLocalService,
     private router: Router
-  ) {
+  ) {}
+
+  ngOnInit(): void {
+    try {
+      this.delivery = JSON.parse(sessionStorage.getItem('konrad_delivery') ?? '{}');
+    } catch { this.delivery = {}; }
+
     this.pseForm = this.fb.group({
-      pagadorIdentificacion: ['', Validators.required],
-      pagadorTipo: ['NATURAL'],
       entidadBancaria: ['', Validators.required],
+      identificacion:  ['', Validators.required],
+      tipoPersona:     ['NATURAL'],
     });
     this.cardForm = this.fb.group({
-      numeroTarjeta: ['', Validators.required],
-      nombreTitularTarjeta: ['', Validators.required],
-      fechaVencimientoTarjeta: ['', Validators.required],
-      cvv: ['', Validators.required],
+      cardNumber: ['', Validators.required],
+      cardExpiry: ['', Validators.required],
+      cardCvv:    ['', Validators.required],
     });
   }
 
-  selectMethod(m: MetodoPago): void { this.selectedMethod = m; this.errorMsg = ''; }
-
-  processPayment(): void {
+  pay(): void {
     this.processing = true;
-    this.errorMsg = '';
+    this.errorMsg   = '';
+    this.successMsg = '';
 
-    const buyerId = this.auth.getRelatedEntityId();
+    const buyerId = this.auth.currentState.relatedEntityId ?? '';
+    const items   = this.cartSvc.getItems();
 
-    const req: PaymentRequest = {
-      entityId: buyerId + '-cart',
-      entityType: 'ORDER',
-      monto: this.totalFinal,
-      metodoPago: this.selectedMethod,
-      ...(this.selectedMethod === 'PSE' ? this.pseForm.value : {}),
-      ...(this.selectedMethod === 'CREDIT_CARD' ? this.cardForm.value : {}),
+    // 1. Crear la orden
+    const orderBody = {
+      buyerId,
+      tipoEntrega: this.delivery?.domicilio ? 'DOMICILIO' : 'TIENDA',
+      direccionEntrega: this.delivery?.direccion ?? '',
+      ciudad: this.delivery?.ciudad ?? '',
+      items: items.map(i => ({
+        productId: i.productoId,
+        cantidad:  i.cantidad,
+        sellerId:  i.sellerId,
+      })),
     };
 
-    this.paymentSvc.process(req).subscribe({
-      next: payment => {
-        if (payment.estado === 'APROBADO') {
-          // Confirmar la orden con el paymentId
-          this.orderSvc.checkout(buyerId, payment.paymentId).subscribe({
-            next: order => {
-              this.processing = false;
-              this.paymentResult = payment;
-              setTimeout(() => this.router.navigate(['/buyer/orders']), 2000);
-            },
-            error: () => { this.processing = false; this.errorMsg = 'Error al confirmar la orden.'; }
-          });
-        } else {
-          this.processing = false;
-          this.errorMsg = 'El pago fue rechazado. Verifica los datos e intenta nuevamente.';
-        }
+    this.orderSvc.createOrder(orderBody).subscribe({
+      next: (order: any) => {
+        // 2. Procesar pago
+        const payReq: PaymentRequest = {
+          entityId:    order.id ?? order.orderId,
+          entityType:  'ORDER',
+          monto:       this.delivery?.total ?? 0,
+          metodoPago:  this.selectedMethod,
+          moneda:      'COP',
+          descripcion: 'Pago orden Konrad',
+          ...(this.selectedMethod === 'PSE'         ? { ...this.pseForm.value } : {}),
+          ...(this.selectedMethod === 'CREDIT_CARD' ? { ...this.cardForm.value } : {}),
+        };
+
+        this.paymentSvc.process(payReq).subscribe({
+          next: () => {
+            this.cartSvc.clear();
+            this.successMsg = '¡Pago exitoso! Tu orden fue confirmada.';
+            this.processing = false;
+            setTimeout(() => this.router.navigate(['/buyer/orders']), 2000);
+          },
+          error: () => {
+            this.errorMsg   = 'La orden fue creada pero el pago falló. Intenta de nuevo.';
+            this.processing = false;
+          }
+        });
       },
-      error: err => {
+      error: (err: any) => {
+        this.errorMsg   = err?.error?.message ?? 'No se pudo crear la orden.';
         this.processing = false;
-        this.errorMsg = err.error?.message ?? 'Error al procesar el pago.';
       }
     });
   }

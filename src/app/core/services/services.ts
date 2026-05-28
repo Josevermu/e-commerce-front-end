@@ -135,6 +135,11 @@ export class OrderService {
     return this.http.get<Order>(`${this.BASE}/orders/${orderId}`);
   }
 
+  /** POST /orders — crear orden directamente con items */
+  createOrder(body: any): Observable<any> {
+    return this.http.post<any>(`${this.BASE}/orders`, body);
+  }
+
   getByBuyer(buyerId: string): Observable<Order[]> {
     return this.http.get<Order[]>(`${this.BASE}/orders/buyer/${buyerId}`);
   }
