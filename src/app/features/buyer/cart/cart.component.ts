@@ -429,3 +429,4 @@ export class CheckoutComponent implements OnInit {
     setTimeout(() => this.router.navigate(['/buyer/orders']), 3000);
   }
 }
+
