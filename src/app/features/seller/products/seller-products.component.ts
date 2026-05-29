@@ -160,7 +160,7 @@ export class SellerProductsComponent implements OnInit {
   ) {
     this.productForm = this.fb.group({
       nombre:       ['', Validators.required],
-      descripcion:  ['', Validators.required],
+      descripcion:  [''],
       categoria:    ['Electrónica', Validators.required],
       subcategoria: [''],
       valor: [0, [Validators.required, Validators.min(1)]],
@@ -220,4 +220,5 @@ export class SellerProductsComponent implements OnInit {
     return map[cat ?? ''] ?? '📦';
   }
 }
+
 
