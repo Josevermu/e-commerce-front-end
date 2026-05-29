@@ -47,8 +47,8 @@ import { Product } from '../../../core/models';
           <div class="product-card__body">
             <div class="product-card__category">{{ p.categoria }}</div>
             <div class="product-card__name">{{ p.nombre }}</div>
-            <div class="product-card__price">{{ p.precio | currency:'COP':'$':'1.0-0' }}</div>
-            <div class="product-card__stock text-sm text-muted">Stock: {{ p.stock }} unidades</div>
+            <div class="product-card__price">{{ p.valor | currency:'COP':'$':'1.0-0' }}</div>
+            <div class="product-card__stock text-sm text-muted">Stock: {{ p.cantidad }} unidades</div>
             <div class="product-card__actions">
               <button class="btn btn-ghost btn-sm" (click)="editProduct(p)">✏️ Editar</button>
               <button class="btn btn-ghost btn-sm" style="color:var(--color-danger)" (click)="deleteProduct(p.id!)">🗑 Eliminar</button>
@@ -89,12 +89,12 @@ import { Product } from '../../../core/models';
 
           <div class="form-row">
             <div class="form-group">
-              <label>Precio (COP) *</label>
-              <input type="number" class="form-control" formControlName="precio" />
+              <label>Valor (COP) *</label>
+              <input type="number" class="form-control" formControlName="valor" />
             </div>
             <div class="form-group">
-              <label>Stock disponible *</label>
-              <input type="number" class="form-control" formControlName="stock" />
+              <label>Cantidad disponible *</label>
+              <input type="number" class="form-control" formControlName="cantidad" />
             </div>
           </div>
 
@@ -160,11 +160,11 @@ export class SellerProductsComponent implements OnInit {
   ) {
     this.productForm = this.fb.group({
       nombre:       ['', Validators.required],
-      descripcion:  ['', Validators.required],
+      descripcion:  [''],
       categoria:    ['Electrónica', Validators.required],
       subcategoria: [''],
-      precio:       [0, [Validators.required, Validators.min(1)]],
-      stock:        [1, [Validators.required, Validators.min(0)]],
+      valor: [0, [Validators.required, Validators.min(1)]],
+      cantidad: [1, [Validators.required, Validators.min(0)]],
       peso:         [0.5],
       aplicaIVA:    [false],
     });
@@ -180,7 +180,7 @@ export class SellerProductsComponent implements OnInit {
     });
   }
 
-  openModal(): void { this.editMode = false; this.editingId = null; this.productForm.reset({ categoria: 'Electrónica', stock: 1, precio: 0, peso: 0.5, aplicaIVA: false }); this.showModal = true; }
+  openModal(): void { this.editMode = false; this.editingId = null; this.productForm.reset({ categoria: 'Electrónica', cantidad: 1, valor: 0, peso: 0.5, aplicaIVA: false }); this.showModal = true; }
   closeModal(): void { this.showModal = false; this.errorMsg = ''; }
 
   editProduct(p: Product): void {
@@ -220,3 +220,5 @@ export class SellerProductsComponent implements OnInit {
     return map[cat ?? ''] ?? '📦';
   }
 }
+
+

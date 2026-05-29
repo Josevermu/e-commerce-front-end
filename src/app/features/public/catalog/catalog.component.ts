@@ -175,6 +175,7 @@ export class CatalogComponent implements OnInit {
   itemAdded = false;
 
   get isBuyer(): boolean { return this.auth.currentState.role === 'BUYER'; }
+  get isLoggedIn(): boolean { return this.auth.isLoggedIn(); }
 
   categories = ['Ropa', 'Electrónica', 'Hogar', 'Deportes', 'Belleza', 'Libros', 'Alimentos', 'Juguetes'];
 

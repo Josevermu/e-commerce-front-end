@@ -7,11 +7,13 @@ import { AuthState } from './core/models';
 @Component({
   selector: 'app-root',
   template: `
-    <ng-container *ngIf="isPublicRoute; else authenticated">
+    <ng-container *ngIf="!isLoggedIn; else authenticated">
+      <!-- Layout público sin navbar -->
       <router-outlet></router-outlet>
     </ng-container>
 
     <ng-template #authenticated>
+      <!-- Layout autenticado: navbar siempre visible -->
       <div class="app-shell">
         <app-navbar [authState]="authState"></app-navbar>
         <div class="app-body">
@@ -35,21 +37,21 @@ import { AuthState } from './core/models';
 })
 export class AppComponent implements OnInit {
   authState: Partial<AuthState> = {};
-  isPublicRoute = true;
-
-  private publicPaths = ['/auth', '/products', '/sellers/apply', '/buyers/register', '/forbidden'];
+  isLoggedIn = false;
 
   constructor(private router: Router, private auth: AuthService) {}
 
   ngOnInit(): void {
-    this.authState = this.auth.currentState;
+    // Verificar estado inicial
+    this.isLoggedIn = this.auth.isLoggedIn();
+    this.authState  = this.auth.currentState;
 
+    // Actualizar en cada navegación
     this.router.events.pipe(
       filter((e: Event): e is NavigationEnd => e instanceof NavigationEnd)
-    ).subscribe((e: NavigationEnd) => {
-      const url = e.urlAfterRedirects;
-      this.isPublicRoute = this.publicPaths.some(p => url.startsWith(p)) || !this.auth.isLoggedIn();
-      this.authState = this.auth.currentState;
+    ).subscribe(() => {
+      this.isLoggedIn = this.auth.isLoggedIn();
+      this.authState  = this.auth.currentState;
     });
   }
 }
